@@ -1,0 +1,21 @@
+# Label PDFs — may contain personal address data
+*.pdf
+
+# PyInstaller build artefacts
+build/
+dist/
+*.spec
+
+# Config persisted at runtime
+vinted4x6.json
+
+# Preview/test images generated locally
+*_preview.png
+gui_screenshot.png
+screenshot_gui.py
+render_preview.py
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
