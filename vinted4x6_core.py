@@ -232,22 +232,51 @@ def default_sheet_out(first_path, cfg):
 # printing
 # ---------------------------------------------------------------------------
 
-def print_pdf(path):
+def print_pdf(path, cfg=None):
+    """Send path to the printer.  cfg['printer'] names a specific printer;
+    omit or leave blank to use the system default."""
+    printer = (cfg or {}).get("printer", "").strip()
     for exe in (
         r"C:\Program Files\SumatraPDF\SumatraPDF.exe",
         r"C:\Users\%s\AppData\Local\SumatraPDF\SumatraPDF.exe"
         % os.environ.get("USERNAME", ""),
     ):
         if os.path.exists(exe):
-            subprocess.Popen([exe, "-print-to-default",
-                              "-print-settings", "noscale", path])
-            return "sent to default printer (noscale)"
+            if printer:
+                args = [exe, "-print-to", printer, "-print-settings", "noscale", path]
+            else:
+                args = [exe, "-print-to-default", "-print-settings", "noscale", path]
+            subprocess.Popen(args)
+            dest = printer or "default printer"
+            return f"sent to {dest} (noscale)"
     if os.name == "nt":
         os.startfile(path, "print")  # noqa: S606
         return "sent via Windows print verb — check scaling is 'Actual size'"
-    subprocess.Popen(["lp", "-o", "media=Custom.4x6in", "-o",
-                      "fit-to-page=false", path])
+    lp_args = ["lp", "-o", "media=Custom.4x6in", "-o", "fit-to-page=false"]
+    if printer:
+        lp_args += ["-d", printer]
+    lp_args.append(path)
+    subprocess.Popen(lp_args)
     return "sent to lp"
+
+
+def list_printers():
+    """Return list of printer names available on this system (Windows only)."""
+    try:
+        import winreg
+        key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                             r"SYSTEM\CurrentControlSet\Control\Print\Printers")
+        printers = []
+        i = 0
+        while True:
+            try:
+                printers.append(winreg.EnumKey(key, i))
+                i += 1
+            except OSError:
+                break
+        return printers
+    except Exception:
+        return []
 
 
 # ---------------------------------------------------------------------------

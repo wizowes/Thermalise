@@ -26,7 +26,7 @@ from vinted4x6_core import (
     find_blocks, best_block,
     make_4x6, make_a4_sheet,
     default_out, default_sheet_out,
-    print_pdf, load_cfg, save_cfg,
+    print_pdf, list_printers, load_cfg, save_cfg,
 )
 
 PREVIEW_W = 400
@@ -326,7 +326,7 @@ class App(tk.Tk):
                 out = default_out(self.entries[-1].path, cfg)  # last file for print
 
             if then_print:
-                msg += "  —  " + print_pdf(out)
+                msg += "  —  " + print_pdf(out, cfg)
             self._set_status(msg)
         except Exception as e:
             messagebox.showerror("Save failed", str(e))
