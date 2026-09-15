@@ -1,5 +1,7 @@
 # Label PDFs — may contain personal address data
 *.pdf
+# Except the anonymised test label kept for CI/dev use
+!test-label-blank.pdf
 
 # PyInstaller build artefacts
 build/
