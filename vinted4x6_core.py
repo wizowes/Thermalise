@@ -16,7 +16,18 @@ import numpy as np
 PT_PER_MM = 72.0 / 25.4
 LABEL_W, LABEL_H = 4 * 72.0, 6 * 72.0   # 288 x 432 pt (portrait 4x6)
 DETECT_DPI = 100
-CONFIG = Path(__file__).parent / "vinted4x6.json"
+
+def _config_path():
+    # In a PyInstaller bundle __file__ resolves to the temp extraction dir,
+    # which is deleted on exit. Use AppData so settings persist.
+    appdata = os.environ.get("APPDATA")
+    if appdata:
+        d = Path(appdata) / "Thermalise"
+        d.mkdir(exist_ok=True)
+        return d / "vinted4x6.json"
+    return Path(__file__).parent / "vinted4x6.json"
+
+CONFIG = _config_path()
 
 DEFAULTS = {
     "bleed_mm": 1.0,
