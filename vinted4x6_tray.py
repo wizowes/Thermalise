@@ -12,7 +12,7 @@ import sys
 import threading
 import tkinter as tk
 from pathlib import Path
-from tkinter import filedialog, ttk
+from tkinter import filedialog, messagebox, ttk
 
 import pystray
 from PIL import Image, ImageDraw
@@ -78,6 +78,33 @@ def _toast(title, message):
         )
     except Exception:
         pass
+
+
+# ---------------------------------------------------------------------------
+# splash screen
+# ---------------------------------------------------------------------------
+
+class SplashScreen(tk.Toplevel):
+    def __init__(self, master):
+        super().__init__(master)
+        self.overrideredirect(True)       # no title bar / borders
+        self.attributes("-topmost", True)
+        self.configure(bg="#1c1c2e")
+
+        w, h = 320, 110
+        sw, sh = self.winfo_screenwidth(), self.winfo_screenheight()
+        self.geometry(f"{w}x{h}+{(sw-w)//2}+{(sh-h)//2}")
+
+        tk.Label(self, text="Thermalise", font=("Segoe UI", 22, "bold"),
+                 bg="#1c1c2e", fg="white").pack(pady=(18, 4))
+        tk.Label(self, text="Label printer — starting…", font=("Segoe UI", 10),
+                 bg="#1c1c2e", fg="#888").pack()
+
+        # thin accent bar at bottom
+        tk.Frame(self, height=4, bg="#5b6af0").pack(fill="x", side="bottom")
+
+    def close(self):
+        self.destroy()
 
 
 # ---------------------------------------------------------------------------
@@ -249,6 +276,9 @@ class TrayApp:
         self._icon = None
 
     def run(self):
+        splash = SplashScreen(self._root)
+        self._root.update()
+
         self._icon = pystray.Icon(
             "thermalise", _make_icon(), "Thermalise",
             menu=pystray.Menu(
@@ -264,7 +294,15 @@ class TrayApp:
             ),
         )
         self._start_watchers()
-        threading.Thread(target=self._icon.run, daemon=True).start()
+
+        def _run_icon():
+            self._icon.run()
+
+        t = threading.Thread(target=_run_icon, daemon=True)
+        t.start()
+
+        # dismiss splash after a short delay once the icon thread is running
+        self._root.after(1500, splash.close)
         self._root.mainloop()
 
     # ------------------------------------------------------------------
@@ -343,13 +381,26 @@ class TrayApp:
         self._root.withdraw()
 
     def _quit(self, *_):
-        self._stop_watchers()
-        self._icon.stop()
-        self._root.quit()
+        # pystray callbacks run on a non-tkinter thread; schedule on main thread
+        self._root.after(0, self._confirm_quit)
+
+    def _confirm_quit(self):
+        self._root.deiconify()
+        if messagebox.askyesno(
+            "Quit Thermalise",
+            "Stop the watcher and quit?\n\nLabels will not be auto-printed while Thermalise is closed.",
+            parent=self._root,
+        ):
+            self._stop_watchers()
+            self._icon.stop()
+            self._root.quit()
+        else:
+            self._root.withdraw()
 
 
 def main():
     if "--gui" in sys.argv:
+        sys.argv.remove("--gui")   # strip flag so GUI doesn't try to open it as a file
         from vinted4x6_gui import main as gui_main
         gui_main()
     else:
