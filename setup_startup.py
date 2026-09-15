@@ -1,37 +1,46 @@
 """
-setup_startup.py - register the Thermalise tray app with Windows Task Scheduler.
+setup_startup.py - register Thermalise with Windows Task Scheduler.
+
+Prefers the built EXE (dist/Thermalise.exe) if present, otherwise falls
+back to launching the Python script directly.
 
 Run once (no admin needed — registers for the current user only):
-    python setup_startup.py
+    python setup_startup.py        (or Thermalise.exe setup_startup.py)
 
 To remove:
     python setup_startup.py --remove
-
-The task starts 60 seconds after login to let the desktop settle.
 """
 import subprocess
 import sys
 from pathlib import Path
 
 TASK_NAME = "Thermalise"
-SCRIPT = Path(__file__).parent / "vinted4x6_tray.py"
+HERE = Path(__file__).parent
+EXE = HERE / "dist" / "Thermalise.exe"
+SCRIPT = HERE / "vinted4x6_tray.py"
 PYTHON = sys.executable
+
+
+def _command():
+    if EXE.exists():
+        return f'"{EXE}"'
+    return f'"{PYTHON}" "{SCRIPT}"'
 
 
 def register():
     cmd = [
         "schtasks", "/Create", "/F",
         "/TN", TASK_NAME,
-        "/TR", f'"{PYTHON}" "{SCRIPT}"',
+        "/TR", _command(),
         "/SC", "ONLOGON",
-        "/DELAY", "0001:00",   # 1 minute delay after login
+        "/DELAY", "0001:00",   # 1 minute after login
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode == 0:
-        print(f"Registered '{TASK_NAME}' in Task Scheduler.")
-        print("Thermalise tray app will start 1 minute after each login.")
+        print(f"Registered '{TASK_NAME}' — starts 1 min after login.")
+        print(f"Command: {_command()}")
     else:
-        print("Failed to register task:")
+        print("Failed:")
         print(result.stderr.strip())
 
 

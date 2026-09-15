@@ -154,8 +154,12 @@ class TrayApp:
             self._icon.title = f"Thermalise — {msg}"
 
     def _open_gui(self, *_):
-        gui = Path(__file__).parent / "vinted4x6_gui.py"
-        subprocess.Popen([sys.executable, str(gui)])
+        if getattr(sys, "frozen", False):
+            # Running as a PyInstaller bundle — relaunch self with --gui
+            subprocess.Popen([sys.executable, "--gui"])
+        else:
+            gui = Path(__file__).parent / "vinted4x6_gui.py"
+            subprocess.Popen([sys.executable, str(gui)])
 
     def _check_now(self, *_):
         if not self.cfg.get("email_enabled"):
@@ -190,7 +194,11 @@ class TrayApp:
 
 
 def main():
-    TrayApp().run()
+    if "--gui" in sys.argv:
+        from vinted4x6_gui import main as gui_main
+        gui_main()
+    else:
+        TrayApp().run()
 
 
 if __name__ == "__main__":

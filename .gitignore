@@ -7,6 +7,7 @@
 build/
 dist/
 *.spec
+!Thermalise.spec
 
 # Config persisted at runtime
 vinted4x6.json
